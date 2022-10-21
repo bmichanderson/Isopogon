@@ -1,0 +1,203 @@
+---
+title: "Principal Components Analysis"
+output: html_document
+---
+
+This document describes the process of running PCA for *Isopogon* ingroup samples using strict-filtered SNPs
+
+First, set the working directory to the folder with the input files (e.g. `set1.vcf`, `set1_1.vcf`, `set1_2.vcf`)
+
+Load up the libraries and designate the input files  
+```{r}
+suppressMessages(library(adegenet))
+suppressMessages(library(vcfR))
+vcf_file1 <- "set1.vcf"
+vcf_file2 <- "set1_1.vcf"
+vcf_file3 <- "set1_2.vcf"
+```
+
+Create colour palettes and point choices  
+```{r}
+col_bux <- "#cc1111"
+col_can <- "#11ccbb"
+col_dar <- "#dd2288"
+col_fit <- "#77dd66"
+col_obo <- "#ee7733"
+col_pol <- "#3333bb"
+col_pop <- "#66aaff"
+col_rav <- "#8800aa"
+col_spa <- "#117733"
+col_pal <- c(col_bux, col_can, col_dar, col_fit, col_obo, col_pol, col_pop, col_rav, col_spa)
+
+# set point choices for the groups such that the subsets have distinct shapes in them
+# 21 - filled circle, 22 - filled square, 23 - filled diamond,
+# 24 - filled triangle, 25 - filled triangle (down)
+point_ch <- c(21, 22, 21, 23, 24, 21, 22, 23, 25)
+```
+
+Create a group sampling scheme and set an order for the legend   
+These will be searched against sample names  
+```{r}
+bux <- c("BUX")
+can <- c("CAN")
+dar <- c("DAR")
+fit <- c("FIT")
+obo <- c("OBO")
+pol <- c("POL")
+pop <- c("POP")
+rav <- c("RAV")
+spa <- c("SPA")
+groups <- list(bux, can, dar, fit, obo, pol, pop, rav, spa)
+group_order <- c(3, 2, 9, 1, 5, 4, 8, 6, 7)
+```
+
+Create a function for constructing a dataframe to hold groups, colours and points  
+```{r}
+make_df <- function(samples, groups, col_pal, point_ch) {
+
+	# set up the dataframe
+	mydf <- as.data.frame(matrix(ncol = 4, nrow = length(samples)))
+	colnames(mydf) <- c("sample", "group", "colour", "point")
+	mydf$sample <- samples
+
+	# cycle through the groups and set indices
+	indices <- rep(0, length(samples))
+	index <- 1
+	for (group in groups) {
+		search_term <- paste(group, collapse = "|")
+		indices[grep(search_term, samples)] <- index
+		index <- index + 1
+	}
+
+	# assign group number, colour and point
+	mydf$group <- indices
+	mydf$colour <- col_pal[indices]
+	mydf$point <- point_ch[indices]
+
+	# return the dataframe
+	mydf
+}
+```
+
+Create a function to run and plot a PCA
+```{r}
+run_pca <- function(genl, mydf, x = 1, y = 2) {
+	# run the PCA and grab elements
+	pca <- glPca(genl, nf = 5, parallel = TRUE)
+	pca_var <- round(100 * pca$eig / sum(pca$eig), digits = 1)
+	method <- paste0("glPca (", nLoc(genl), " SNPs)")
+	pca_scores <- pca$scores
+
+	# grab plotting features from the dataframe
+	colours <- mydf$colour
+	point_type <- mydf$point
+
+	# plot
+	par(mar = c(5.1, 6.1, 5.1, 2.1), cex.lab = 2)
+	plot(pca_scores[, x], pca_scores[, y],
+		xlab = paste0("PC", x, " (", pca_var[x], "%)"),
+		ylab = paste0("PC", y, " (", pca_var[y], "%)"),
+		main = paste0("Principal Component Analysis\n", method),
+		bg = colours,
+		col = "black",
+		lwd = 0.25,
+		pch = point_type,
+		asp = 1,
+		cex = 2,
+		panel.first = {
+			grid()
+			abline(h = 0, v = 0)
+		},
+		cex.axis = 1.5,
+		cex.main = 1.5)
+	par(mar = c(5.1, 4.1, 4.1, 2.1), cex.lab = 1)
+}
+```
+
+Create a function to plot a legend
+```{r}
+plot_legend <- function(mydf, myorder) {
+	leg_df <- unique(mydf[, 2:4])
+	leg_df <- leg_df[match(myorder, leg_df$group), ]
+	plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
+	legend("center", legend = leg_df$group,
+		pch = leg_df$point, pt.bg = leg_df$colour,
+		col = "black", title = NULL, cex = 1.5,
+		pt.cex = 2, pt.lwd = 0.25)
+}
+```
+
+Select one VCF to run (run one of these at a time)  
+```{r}
+vcf_file <- vcf_file1
+filename <- "pca1.pdf"
+```
+```{r}
+vcf_file <- vcf_file2
+filename <- "pca2.pdf"
+```
+```{r}
+vcf_file <- vcf_file3
+filename <- "pca3.pdf"
+```
+
+Read in the VCF  
+```{r}
+vcf <- read.vcfR(vcf_file, verbose = FALSE)
+cat("Read in a VCF with", ncol(vcf@gt) - 1, "samples,",
+	length(unique(vcf@fix[, 1])), "loci and", nrow(vcf@fix), "SNPs\n")
+genl <-	vcfR2genlight(vcf)
+```
+
+Generate the dataframe with assigned colours and points for each sample  
+```{r}
+samples <- indNames(genl)
+mydf <- make_df(samples, groups, col_pal, point_ch)
+```
+
+Start creating a pdf
+```{r}
+pdf(filename, width = 7, height = 7)
+```
+
+Run and plot the PCA
+```{r}
+run_pca(genl, mydf, x = 1, y = 2)
+run_pca(genl, mydf, x = 1, y = 3)
+run_pca(genl, mydf, x = 1, y = 4)
+run_pca(genl, mydf, x = 2, y = 3)
+run_pca(genl, mydf, x = 2, y = 4)
+run_pca(genl, mydf, x = 3, y = 4)
+plot_legend(mydf, group_order)
+```
+
+Stop creating the pdf
+```{r}
+invisible(dev.off())
+```
+
+If interested, the PCA can be plotted interactively
+```{r}
+suppressMessages(library("plotly"))
+pca <- glPca(genl, nf = 5, parallel = TRUE)
+data <- as.data.frame(pca$scores)
+x_vals <- data$PC1
+y_vals <- data$PC2
+z_vals <- data$PC3
+text_field <- rownames(data)
+```
+
+```{r}
+plot_ly(data = data, type = "scatter", mode = "markers",
+		x = ~x_vals, y = ~y_vals, text = text_field, size = 15
+)
+```
+
+```{r}
+plot_ly(data = data, type = "scatter3d", mode = "markers",
+		x = ~x_vals, y = ~y_vals, z = ~z_vals,
+		text = text_field, size = 15
+)
+```
+
+
