@@ -1,8 +1,8 @@
 # *Isopogon* ddRAD analyses  
 Author: B.M. Anderson  
 
-These notes outline the analyses run on ddRAD data to generate results for the paper "[Title]"  
-All scripts are assumed to be in an accessible folder for relative calls, indicated here as a directory in home called `~/scripts/`  
+These notes outline the analyses run on ddRAD data to generate results for the paper "Revised taxonomy for two species complexes of Western Australian *Isopogon* (Proteaceae) using genomic data" (Anderson et al. 2023)  
+All scripts are assumed to be in an accessible folder for relative calls, indicated here as a directory `scripts/`  
 
 
 # Data
@@ -58,7 +58,7 @@ The full run therefore used the optimal clustering threshold and was subset to e
 The run used 28 CPUs and took roughly 10 hours  
 The command to run was roughly as follows, with the read and barcode files in the working directory
 ```s
-singularity exec -B "$(pwd)":/home/"$USER" ipyrad.sif python ipyrad_full.py 28 samples_full.txt
+singularity exec -H "$(pwd)" ipyrad.sif python ipyrad_full.py 28 samples_full.txt
 ```
 The primary output for downstream analyses is the VCF file: `full.vcf` (not included due to its size)  
 The VCF file is largely unfiltered, keeping all loci found in at least three samples  
@@ -74,11 +74,11 @@ OBO1-02-344596	FIT2-04-344588
 OBO2-03-344602	FIT3-04-344593
 POL1-07-344609	POP1-01-344619
 POL2-04-344613	BUX3-04-344656
-POL5-01-344700	POP2-01-344706 (note: already replicated, so now a triplicate)
+POL5-01-344700	POP2-01-344706 (note: already duplicated, so now a triplicate)
 ```
 As a result, those sample labels (left) in the output VCF represent additional duplicates (right)  
 
-After estimating error **and clonality (see below)**, one of each of the technical replicates can be removed (chosen manually based on more recovered loci; the above extra duplicates were all removed; two were removed from the triplicate); these sampleIDs can be put in a `reps.to_remove` text file, one per line for later filtering steps  
+After estimating error and clonality (see below), one of each of the technical replicates can be removed (chosen manually based on more recovered loci; the above extra duplicates were all removed; two were removed from the triplicate); these sampleIDs can be put in a `reps.to_remove` text file, one per line for later filtering steps  
 
 
 ## Tiger genotyping error estimate
@@ -95,8 +95,8 @@ Now filter the VCF for just those samples, keeping SNPs present in all of them, 
 Then use the script `single_snp.py` to select a single SNP per locus (max depth or random in the case of ties in coverage)  
 ```s
 grep -v -f reps.txt samples_full.txt > samples.to_remove 
-python3 ~/scripts/filter_vcf.py -o error --mincov 1 --minmd 10 --bial yes -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes error.vcf
+python3 scripts/filter_vcf.py -o error --mincov 1 --minmd 10 --bial yes -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes error.vcf
 mv mod_error.vcf error.vcf
 ```
 
@@ -115,7 +115,7 @@ Manually assign POL5-01-344700 to the POP2-01 group (triplicate)
 Now run error estimation and visualise it with the script `Tiger_error_plot.py`  
 ```s
 tiger task=estimateIndReps outname=error vcf=../error.vcf groups=rep_groups.txt
-python3 ~/scripts/Tiger_error_plot.py -o error -m 500 error_errorRates.txt
+python3 scripts/Tiger_error_plot.py -o error -m 500 error_errorRates.txt
 ```
 This will create an `error.pdf` file  
 Based on the error rate estimates, mean read depth cutoffs of min 10 and max 250 were chosen  
@@ -131,8 +131,8 @@ The script to assess similarity is `vcf_similarity.py`
 ```s
 # back in the main directory (not in the tiger folder)
 grep "Z" samples_full.txt > samples.to_remove
-python3 ~/scripts/filter_vcf.py -o clones --mincov 0.9 -s samples.to_remove full.vcf
-python3 ~/scripts/vcf_similarity.py -v clones.vcf -o clones
+python3 scripts/filter_vcf.py -o clones --mincov 0.9 -s samples.to_remove full.vcf
+python3 scripts/vcf_similarity.py -v clones.vcf -o clones
 ```
 
 The output `clones_comps.txt` can be imported into a spreadsheet program and sorted to manually check  
@@ -153,8 +153,8 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o set1 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes set1.vcf
+python3 scripts/filter_vcf.py -o set1 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes set1.vcf
 mv mod_set1.vcf set1.vcf
 ```
 
@@ -174,8 +174,8 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o set1_1 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes set1_1.vcf
+python3 scripts/filter_vcf.py -o set1_1 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes set1_1.vcf
 mv mod_set1_1.vcf set1_1.vcf
 ```
 
@@ -197,8 +197,8 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o set1_2 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes set1_2.vcf
+python3 scripts/filter_vcf.py -o set1_2 --mincov 0.9 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes set1_2.vcf
 mv mod_set1_2.vcf set1_2.vcf
 ```
 
@@ -214,8 +214,8 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o set2 --mincov 0.25 --minmd 10 --maxmd 250 --mac 1 -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes set2.vcf
+python3 scripts/filter_vcf.py -o set2 --mincov 0.25 --minmd 10 --maxmd 250 --mac 1 -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes set2.vcf
 mv mod_set2.vcf set2.vcf
 ```
 
@@ -232,21 +232,21 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o phylo --mincov 0.5 --minmd 10 --maxmd 250 --mac 1 -s samples.to_remove full.vcf
+python3 scripts/filter_vcf.py -o phylo --mincov 0.5 --minmd 10 --maxmd 250 --mac 1 -s samples.to_remove full.vcf
 ```
 
 From the filtered VCF, loci names can be extracted and used to extract the full alignments from `full.loci` using the script `loci_extract.py` and at the same time removing undesired samples from those loci  
 ```s
 grep -v "#" phylo.vcf | cut -f 1 | uniq | sed 's/RAD_//g' > loci.txt
 mkdir loci_extract && cd loci_extract
-python3 ~/scripts/loci_extract.py -l ../loci.txt -s ../samples.to_remove ../full.loci
+python3 scripts/loci_extract.py -l ../loci.txt -s ../samples.to_remove ../full.loci
 ```
 
 All the loci can be combined into a single alignment using the script `combine_alignments.py`  
 In addition, the alignment needs to then be filtered to remove any positions with more than 50% missing data (using the script `clean_alignment.py`)
 ```s
-python3 ~/scripts/combine_alignments.py -f single *.fasta
-python3 ~/scripts/clean_alignment.py -p 50 combine_out.fasta
+python3 scripts/combine_alignments.py -f single *.fasta
+python3 scripts/clean_alignment.py -p 50 combine_out.fasta
 mv combine_out_clean.fasta ../concat_loci.fasta
 cd .. && rm -r loci_extract
 ```
@@ -256,7 +256,7 @@ The resulting file is `concat_loci.fasta`
 ## Set 4: phylo (coalescent)
 For running SVDquartets, extract a single SNP per locus from the same loci as were used for concatenation (present in at least 50% of samples)
 ```s
-python3 ~/scripts/single_snp.py -r yes phylo.vcf
+python3 scripts/single_snp.py -r yes phylo.vcf
 ```
 This will create the file `mod_phylo.vcf`  
 
@@ -277,8 +277,8 @@ mv temp samples.to_remove
 
 Filter
 ```s
-python3 ~/scripts/filter_vcf.py -o popgen --mincov 0.95 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
-python3 ~/scripts/single_snp.py -r yes popgen.vcf
+python3 scripts/filter_vcf.py -o popgen --mincov 0.95 --minmd 10 --maxmd 250 --mac 3 --bial yes -s samples.to_remove full.vcf
+python3 scripts/single_snp.py -r yes popgen.vcf
 mv mod_popgen.vcf popgen.vcf
 ```
 
@@ -332,7 +332,7 @@ Copy or link the `set1.vcf`, `set1_1.vcf` and `set1_2.vcf` into the working dire
 With dataset 2 as input, run the script `distances.R` to generate a distances matrix  
 Use the option `-d M` for MATCHSTATES distances from the package `pofadinr`  
 ```s
-Rscript ~/scripts/distances.R -d M -o set2 -v set2.vcf
+Rscript scripts/distances.R -d M -o set2 -v set2.vcf
 ```
 This will produce a number of files, but the key output is `set2_distMATCHSTATES.nex`, which can be input into SplitsTree4 v. 4.17.1 to create a NeighborNet network  
 
@@ -343,32 +343,32 @@ Using dataset 1 subsets 1 and 2, convert the VCFs to the input format appropriat
 Set 1 subset 1
 ```s
 grep "#CHROM" set1_1.vcf | cut -f 1-9 --complement | tr -s "\t" "\n" > temp
-paste temp <(cut -f 1 -d "-" temp) > str_pops1a.tab && rm temp
-sed -i 's/BUX[1-3]$/1/g' str_pops1a.tab
-sed -i 's/CAN[1-2]$/2/g' str_pops1a.tab
-sed -i 's/SPA[1-5]$/2/g' str_pops1a.tab
-sed -i 's/OBO[1-3]$/3/g' str_pops1a.tab
-sed -i 's/FIT[1-2]$/4/g' str_pops1a.tab
-sed -i 's/FIT4$/4/g' str_pops1a.tab
-sed -i 's/FIT3$/5/g' str_pops1a.tab
-sed -i 's/FIT5$/5/g' str_pops1a.tab
+paste temp <(cut -f 1 -d "-" temp) > str_pops1_1.tab && rm temp
+sed -i 's/BUX[1-3]$/1/g' str_pops1_1.tab
+sed -i 's/CAN[1-2]$/2/g' str_pops1_1.tab
+sed -i 's/SPA[1-5]$/2/g' str_pops1_1.tab
+sed -i 's/OBO[1-3]$/3/g' str_pops1_1.tab
+sed -i 's/FIT[1-2]$/4/g' str_pops1_1.tab
+sed -i 's/FIT4$/4/g' str_pops1_1.tab
+sed -i 's/FIT3$/5/g' str_pops1_1.tab
+sed -i 's/FIT5$/5/g' str_pops1_1.tab
 ```
 
 Set 1 subset 2
 ```s
 grep "#CHROM" set1_2.vcf | cut -f 1-9 --complement | tr -s "\t" "\n" > temp
-paste temp <(cut -f 1 -d "-" temp) > str_pops1b.tab && rm temp
-sed -i 's/POL[1-6]$/1/g' str_pops1b.tab
-sed -i 's/POP2$/1/g' str_pops1b.tab
-sed -i 's/POP1$/2/g' str_pops1b.tab
-sed -i 's/RAV[1-3]$/3/g' str_pops1b.tab
+paste temp <(cut -f 1 -d "-" temp) > str_pops1_2.tab && rm temp
+sed -i 's/POL[1-6]$/1/g' str_pops1_2.tab
+sed -i 's/POP2$/1/g' str_pops1_2.tab
+sed -i 's/POP1$/2/g' str_pops1_2.tab
+sed -i 's/RAV[1-3]$/3/g' str_pops1_2.tab
 ```
 
 Use the mapping files and generate the Structure input files with the script `vcf_to_structure.py`  
 ```s
-python3 ~/scripts/vcf_to_structure.py -p str_pops1a.tab set1_1.vcf
+python3 scripts/vcf_to_structure.py -p str_pops1_1.tab set1_1.vcf
 mv set1_1.vcf.str set1_1.str
-python3 ~/scripts/vcf_to_structure.py -p str_pops1b.tab set1_2.vcf
+python3 scripts/vcf_to_structure.py -p str_pops1_2.tab set1_2.vcf
 mv set1_2.vcf.str set1_2.str
 ```
 `Converted a VCF file with 83 samples and 9963 SNP loci to Structure format with 83 samples and 9963 SNP loci`  
@@ -383,7 +383,7 @@ NUMINDS	83
 NUMLOCI	9963
 MARKERNAMES	0
 
-# for 1b
+# for 1_2
 NUMINDS	43
 NUMLOCI	7191
 
@@ -446,7 +446,7 @@ rm temp_lines.txt temp_select.txt
 Evaluate the best K based on the Evanno method using the script `bestK_Evanno.py`  
 ```s
 cat select*likes.txt > all_likes_selected.txt
-python3 ~/scripts/bestK_Evanno.py -l all_likes_selected.txt -o set1_1_bestK_selected
+python3 scripts/bestK_Evanno.py -l all_likes_selected.txt -o set1_1_bestK_selected
 ```
 
 Upload the top 10 per K to CLUMPAK (http://clumpak.tau.ac.il/index.html) to run with default settings
@@ -481,7 +481,7 @@ Note: change the qfile and `-o` arguments for the minor mode files, if desired
 Note: to sort the barplots to a specific sampling order, create a text file with samples (one per line) in the order desired and specify it in the call with `-s`  
 ```s
 for num in {2..5}; do
-python3 ~/scripts/structure_barplots.py -o K"$num" -p ../str_pops1a.tab -q qfile"$num".txt -c colours.txt -s sorting.txt
+python3 scripts/structure_barplots.py -o K"$num" -p ../str_pops1_1.tab -q qfile"$num".txt -c colours.txt -s sorting.txt
 done
 ```
 Repeat the above for set 1 subset 2 as well  
@@ -531,7 +531,7 @@ sed -i 's/ZIA1$/out/g' spp.tab
 
 Use that for creating the input NEXUS file (`mod_phylo.nex`)  
 ```s
-python3 ~/scripts/vcf_to_svd.py -v mod_phylo.vcf -f seq -s spp.tab
+python3 scripts/vcf_to_svd.py -v mod_phylo.vcf -f seq -s spp.tab
 ```
 
 Now create batch files (text files called `batch.nex`) for running PAUP (set threads appropriately; here for on a cluster), the first for lineages  
@@ -604,7 +604,7 @@ iqtree -s mod_phylo.nex -t qfm_mod.tre --scf 100000 -T 8 --prefix concord
 ```
 The output can be extracted into a tree form usable by the `plot_tree.rmd` using the script `concord_to_newick.py`  
 ```s
-python3 ~/scripts/concord_to_newick.py -t concord.cf.tree.nex -o concord
+python3 scripts/concord_to_newick.py -t concord.cf.tree.nex -o concord
 ```
 This produces the file `concord_scf.tre` to input as a treefile to `plot_tree.rmd`  
 
@@ -626,12 +626,12 @@ For looking at measures of diversity including constant sites, we need to extrac
 ```s
 grep -v "#" popgen.vcf | cut -f 1 | uniq | sed 's/RAD_//g' > ploci.txt
 mkdir loci_extract && cd loci_extract
-python3 ~/scripts/loci_extract.py -l ../ploci.txt -s ../samples.to_remove ../full.loci
+python3 scripts/loci_extract.py -l ../ploci.txt -s ../samples.to_remove ../full.loci
 ```
 
 All the loci can be combined into a single alignment using the script `combine_alignments.py`  
 ```s
-python3 ~/scripts/combine_alignments.py -f single *.fasta
+python3 scripts/combine_alignments.py -f single *.fasta
 mv combine_out.fasta ../popgen_loci.fasta
 cd .. && rm -r loci_extract
 ```
@@ -645,12 +645,12 @@ sed -i 's/ concat$//g' popgen_loci.fasta
 Now, evaluate popgen stats for the VCF and for the fasta files with the script `popgen_stats.R`  
 This includes running Fst calculations for the VCF file  
 ```s
-Rscript ~/scripts/popgen_stats.R -o popgen -s popgen_pops.tab -v popgen.vcf -f popgen_loci.fasta -t
+Rscript scripts/popgen_stats.R -o popgen -s popgen_pops.tab -v popgen.vcf -f popgen_loci.fasta -t
 ```
 
 Pairwise Fst values can be plotted in a heatmap with the script `fst_heatmap.R` and a text file (`temp_pops.txt`) with populations, one per line, in the order desired for plotting (optional)  
 ```s
-Rscript ~/scripts/fst_heatmap.R -o popgen -f popgen_StAMPP_Fst.txt -p temp_pops.txt -c mint
+Rscript scripts/fst_heatmap.R -o popgen -f popgen_StAMPP_Fst.txt -p temp_pops.txt -c mint
 ```
 This will create a pdf and a png called `popgen_Fst`  
 
@@ -662,7 +662,7 @@ Create a population localities file (`pop_loc.tab`) having a single population, 
 (NOTE: this file is not provided, as some taxa are conservation listed, preventing sharing of locality information)  
 Also select the populations of interest in a `temp_pops.txt` file (one per line), then run the script like so:  
 ```s
-Rscript ~/scripts/isolation_by_distance.R -o set1 -d popgen_StAMPP_Fst.txt -l pop_loc.tab -m -r -s temp_pops.txt
+Rscript scripts/isolation_by_distance.R -o set1 -d popgen_StAMPP_Fst.txt -l pop_loc.tab -m -r -s temp_pops.txt
 ```
 
 Repeat this for each of the various sampling combinations (new `temp_pops.txt` files)  
