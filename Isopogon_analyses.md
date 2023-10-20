@@ -1,7 +1,7 @@
 # *Isopogon* ddRAD analyses  
 Author: B.M. Anderson  
 
-These notes outline the analyses run on ddRAD data to generate results for the paper "Revised taxonomy for two species complexes of Western Australian *Isopogon* (Proteaceae) using genomic data" (Anderson et al. 2023)  
+These notes outline the analyses run on ddRAD data to generate results for the paper "Revised taxonomy for two species complexes of Western Australian *Isopogon* (Proteaceae) using RADseq" (Anderson et al. 2023)  
 All scripts are assumed to be in an accessible folder for relative calls, indicated here as a directory `scripts/`  
 
 
@@ -203,7 +203,7 @@ mv mod_set1_2.vcf set1_2.vcf
 ```
 
 
-## Set 2: ingroup (lax filtering)
+## Set 2: ingroup (relaxed filtering)
 For analyses less sensitive to missing data (distance network), the VCF was filtered in a similar way to Set 1 but only requiring SNPs be present in 25% of samples (still one per locus), with no restrictions on allele count  
 ```s
 cat reps.to_remove > samples.to_remove
@@ -650,21 +650,22 @@ Rscript scripts/popgen_stats.R -o popgen -s popgen_pops.tab -v popgen.vcf -f pop
 
 Pairwise Fst values can be plotted in a heatmap with the script `fst_heatmap.R` and a text file (`temp_pops.txt`) with populations, one per line, in the order desired for plotting (optional)  
 ```s
-Rscript scripts/fst_heatmap.R -o popgen -f popgen_StAMPP_Fst.txt -p temp_pops.txt -c mint
+Rscript scripts/fst_heatmap.R -o wc -f popgen_StAMPP_Fst.txt -p temp_pops.txt -c mint
+Rscript scripts/fst_heatmap.R -o reich -f popgen_Reich_Fst.txt -p temp_pops.txt -c mint
 ```
-This will create a pdf and a png called `popgen_Fst`  
+This will create a pdf and a png called `wc_Fst` or `reich_Fst`  
 
 
 ### Isolation by distance
 We can use the output Fst comparisons and population localities to assess signals of isolation by distance within groups of interest with the script `isolation_by_distance.R`, which can run a Mantel test as well as a linear regression  
 
 Create a population localities file (`pop_loc.tab`) having a single population, lat, and long separated by tabs, one per line  
-(NOTE: this file is not provided, as some taxa are conservation listed, preventing sharing of locality information)  
-Also select the populations of interest in a `temp_pops.txt` file (one per line), then run the script like so:  
+(NOTE: this file is not provided in this repository, as some taxa are conservation listed, preventing sharing of locality information)  
+Put the populations of interest for each test in a text file (`temp_pops.txt`, one per line), then run the script like so:  
 ```s
-Rscript scripts/isolation_by_distance.R -o set1 -d popgen_StAMPP_Fst.txt -l pop_loc.tab -m -r -s temp_pops.txt
+Rscript scripts/isolation_by_distance.R -o out_1 -d popgen_Reich_Fst.txt -l pop_loc.tab -m -r -s temp_pops.txt
 ```
 
-Repeat this for each of the various sampling combinations (new `temp_pops.txt` files)  
+Repeat this for each of the various desired sampling combinations (e.g. creating new `temp_pops.txt` files or naming them as appropriate)  
 Mantel test statistics and significance will be output to the screen for each run  
-A pdf of the linear regression plots will be created with the output prefix specified (e.g. `set1_IBD.pdf`)
+A pdf of the linear regression plots will be created with the output prefix specified (e.g. `out_1_IBD.pdf`)
